@@ -1,0 +1,335 @@
+<?xml version="1.0"?>
+<!-- (c)2025 BorisScript -->
+<component>
+<public>
+<method name="MT" />
+</public>
+<script language="VBScript">
+<![CDATA[
+''' 21:57 24.12.2018 (c) BorisScript ''' 
+''' 00:14 17.10.2025 new revision  
+''' CT.wsc ''' customer version 2.0  '''
+''' MT, FO, Vox, Ini, OTP               
+
+class MTC
+
+ private ws, delim
+ 
+ private sub Class_Initialize
+  set ws = createobject("wscript.shell")
+ 'on error resume next
+  delim = chr(44)
+  On Error GoTo 0
+ end sub
+
+ private sub Class_Terminate
+  set ws = nothing
+ end sub
+
+ public function FO : set FO = new FileOp : end function
+
+ public sub SetDelimiter(sep):delim=sep:end sub
+ 
+ function Ini : set ini = new INIi    : end function
+ function Vox : set vox = new VOXx    : end function
+ function OTP : set OTP = new Crypto4 : end function
+
+ public sub SetKeys(keyar)
+  dim i,keyarr
+  keyarr = keyar
+  c = ubound(keyarr)
+  for i=0 to c
+   sleep 0.5
+   SelectTask i,keyarr
+  next
+ end sub
+
+ private sub SelectTask(i,arr)
+  dim icon,sign
+  if arr(i)="start"    then i=i+1:ws.run arr(i),1,false:sleep 0.5:exit sub:end if
+  if arr(i)="run"      then i=i+1:ws.run arr(i),1,true :sleep 0.5:exit sub:end if
+  if arr(i)="activate" then i=i+1:ws.appactivate arr(i):sleep 0.5:exit sub:end if
+  if left(arr(i),4)="sub:" then  :ExecuteGlobal mid(arr(i),5):sleep 1:exit sub:end if
+
+  if arr(i)="writefile" then i=i+1:sign=arr(i):i=i+1:writetext sign,arr(i):sleep 1:exit sub:end if
+  if arr(i)="readfile"  then i=i+1:readtext   arr(i):sleep 1:exit sub:end if
+  if left(arr(i),4)="time"   then sleep cdbl(mid(arr(i),5)):exit sub:end if
+  if left(arr(i),4)="say:"   then say mid(arr(i),5):exit sub:end if
+  if left(arr(i),6)="msgbox" then
+    sign = mid(arr(i),7,1)
+    if sign="?" then icon = vbQuestion
+    if sign="!" then icon = vbExclamation
+    if sign=":" or sign="!" or sign="?" then
+     msgbox mid(arr(i),8),icon
+     exit sub
+    end if
+  end if
+  ws.sendkeys arr(i) ''' this is the last line
+ end sub
+
+ public sub Sleep(seconds): strCmd = "%COMSPEC% /C (PING -n " & ( seconds + 0.1 ) & " 127.0.0.1 >NUL 2>&1 || PING -n " & seconds & " ::1 >NUL 2>&1)": ws.Run strCmd,0,1: End Sub
+ public sub Say(word): vox.Speak word:end sub
+
+ function GetClip
+ 'Get clipboard text
+  dim text: GetClip = ""
+  Set objHTML = CreateObject("htmlfile")
+  text = objHTML.ParentWindow.ClipboardData.GetData("text")
+  if text <> empty then GetClip = text
+ end function
+
+' set tokens without quotation mark
+ public sub SetCom(keystring)
+  dim i,keyarr
+  keyarr = Split(keystring, delim, -1, 1)
+  c = ubound(keyarr)
+  for i=0 to c
+   if keyarr(i) <> " " then
+    keyarr(i) = trim(keyarr(i))
+   end if
+  next
+  for i=0 to c
+   sleep 0.5
+   SelectTask i,keyarr
+  next
+ end sub
+
+ public function readfile(file)
+   readfile = fo.readfile(file)
+ end function
+
+ public sub WriteFile(fname, s)
+  fo.writefile fname, s
+ end sub
+
+ public sub AppendFile(fname, s)
+  fo.appendfile fname, s
+ end sub
+
+ public sub Version(fname)
+  s = "/// CT file$Version 1.1$(c) BorisScript$00:00 25.10.2025$" + FileSize(fname)
+  s = replace(s, "$",vbcr + "/// ")  ' u
+  msgbox s,vbquestion, "About"
+ end sub
+ private function FileSize(fname)
+  stuff = fo.Readfile (fname)
+  for i=1 to len(stuff):n = n + asc(mid(stuff,i,1)):next:FileSize = cstr(n)
+ end function
+
+end class
+
+
+public function FO : set FO = new FileOp : end function
+
+''' file operation class '''
+class FileOp
+ private fso, ado, cset
+ private sub Class_Initialize
+  set fso = CreateObject("Scripting.FileSystemObject")
+  set ado = CreateObject("ADODB.Stream")
+  cset = "unicode"
+ end sub
+ private sub Class_Terminate
+  set fso = nothing
+  set ado = nothing
+ end sub
+ private sub WriteF(file,s,opt)
+  Dim f: Set f = fso.OpenTextFile(file, opt, True): f.Write s: f.close
+ end sub
+ public function ReadFile(fname): ReadFile = fso.OpenTextFile(fname,1).readall: end function
+ public sub WriteFile (file,s): WriteF file, s, 2: end sub
+ public sub AppendFile(file,s): WriteF file, s, 8: end sub
+ public function GetFSO(): set GetFSO = fso: end function
+
+ ''' unicode stuff
+ public sub SetChar(sCharset): cset = sCharset: end sub
+
+ function ReadStream(file)
+  with ado
+   .CharSet = cset
+   .Open
+   .LoadFromFile(file)
+   ReadStream = .ReadText()
+   .close
+  end with
+ end function
+
+ sub WriteStream(file, s)
+  with ado
+   .Open
+   .WriteText s
+   .SaveToFile file, 2
+   .close
+  end with
+ end sub
+end class
+
+''' 17:49 27.01.2025
+''' vox class
+class VOXx
+  private m_vox, ws
+  private sub class_initialize()
+   set m_vox = CreateObject("SAPI.SpVoice")
+   set ws    = CreateObject("WScript.Shell")
+  end sub
+  private sub class_terminate
+   set m_vox = nothing
+   set ws = nothing
+  end sub
+  public sub MuteToggle
+   ws.SendKeys(chr(&hAD)) '173
+  end sub
+  public sub Volume(prc)
+   prc = int(prc / 2)
+   if prc > 50 then prc = 50
+   for i=1 to 50
+    ws.SendKeys(chr(&hAE)) '174
+   next
+   for i=1 to prc
+    ws.SendKeys(chr(&hAF)) '175
+   next
+  end sub
+  public sub SetVoice(n)
+   set m_vox.voice = m_vox.getvoices().item(n)
+  end sub
+  public sub GetVoices
+   for each T in m_vox.GetVoices
+    s = s + vbcr + T.GetDescription
+   next
+   msgbox "getVoices():" + s
+  end sub
+  public function vo()
+   set vo = m_vox
+  end function
+  public sub Speed(n)
+   m_vox.rate = n
+  end sub
+  public sub Speak(s)
+   m_vox.Speak s
+  end sub
+end class
+
+''' INIfile class ''' 17:24 11.09.2023 '''
+''' 13:17 11.09.2023
+''' new implementation for easy using:
+''' mt.ini.readini (file.ini, section_name, var_name)
+''' mt.ini.writeini(file.ini, section_name, var_name, new_value)
+
+class INIi
+
+ private fo
+ private sub Class_Initialize
+  set fo = new Fileop
+ end sub
+ private sub Class_Terminate
+  set fo = nothing
+ end sub
+
+ public function ReadIni(fname, secname, varname)   ''' this is for reading
+  s = fo.readfile(fname)
+
+  n = instr(s, "[")
+  if n > 1 then s = mid(s, n)
+  s = replace(s, vbcrlf+"[", "+[")
+  aSection = split(s, "+")
+    
+  for i = 0 to ubound(aSection)
+   aLine = split(aSection(i), vbcrlf)
+   if aLine(0) = "[" + secname + "]" then
+    retval = GetVarValue(aLine, varname)
+    exit for
+   end if
+  next
+  ReadIni = retval
+ end function
+
+ public sub WriteIni(fname, secname, varname, newvalue) ''' this is for writing
+  dim sleft
+  s = fo.readfile(fname)
+
+  n = instr(s, "[")
+  if n > 1 then
+   sleft = left(s, n - 1)
+   s = mid(s, n)
+  end if
+  s = replace(s, vbcrlf+"[", "+[")
+  aSection = split(s, "+")
+    
+  for i = 0 to ubound(aSection)
+   aLine = split(aSection(i), vbcrlf)
+   if aLine(0) = "[" + secname + "]" then
+    call SetVarValue (fname, aLine, varname, newvalue)
+    aSection(i) = join(aLine, vbcrlf)
+    exit for
+   end if
+  next
+  s = sleft + join(aSection, vbcrlf)
+  fo.writefile fname, s
+ end sub
+ 
+ private function GetVarValue(ablock, vname)
+  for i = 0 to ubound(ablock)
+   if len(ablock(i)) > 3 and instr(ablock(i), "=") > 1 then
+    aLine = split(ablock(i), "=")
+    if vname = trim(aLine(0)) then
+     GetVarValue = trim(aLine(1))
+     exit for
+    end if
+   end if
+  next
+ end function
+ 
+ private sub SetVarValue(fname, ablock, varname, newvalue)
+  for i = 0 to ubound(ablock)
+   if len(ablock(i)) > 3 and instr(ablock(i), "=") > 1 then
+    aLine = split(ablock(i), "=")
+    if varname = trim(aLine(0)) then
+     n = instr(ablock(i), "=")
+     ablock(i) = left(ablock(i), n) + newvalue
+     exit for
+    end if
+   end if
+  next
+ end sub
+end class
+
+''' 23:14 06.10.2019      '''
+''' cryptography v4 class '''
+
+class Crypto4
+ private m_s4:private sub class_initialize
+  m_s4 = replace(replace(left(cstr(170564 * Atn(1)),14),chr(44),""),chr(46),"")
+ end sub
+ Private Function Crypt(Inp, Mode)
+  Dim z, i, Position, n1, n2, n3, s3
+  For i = 1 To Len(Inp)
+   Position = Position + 1
+   If Position > Len(m_s4) Then Position = 1
+   n3 = Asc(Mid(m_s4, Position, 1))
+   If Mode Then  
+    n2 = Asc(Mid(Inp, i, 1))
+    n1 = n2 Xor n3
+    s3 = Hex(n1)
+    If Len(s3) < 2 Then s3 = "0" & s3
+    z = z & s3  
+   Else  
+    If i > Len(Inp) \ 2 Then Exit For
+    n1 = CByte("&H" & Mid(Inp, i * 2 - 1, 2))
+    n2 = n1 Xor n3
+    z = z & Chr(n2)
+   End If
+  Next
+  Crypt = z
+ End Function
+
+ function enc(s):enc = Crypt(s, True):end function
+ function dec(s):dec = Crypt(s,False):end function
+ sub setpass(pass):m_s4 = cstr(pass) :end sub 
+end class '''''''''''''''''''''''''''''''''''
+
+''' 16.10.2025
+function MT : set MT = new MTC : end function
+
+]]>
+</script>
+</component>
