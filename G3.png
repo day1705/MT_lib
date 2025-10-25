@@ -1,0 +1,443 @@
+<?xml version="1.0"?>
+<!-- (c)2025 BorisScript -->
+<component>
+<public>
+<method name="Vec" />
+<method name="Qtr" />
+<method name="Geo" />
+</public>
+<script language="VBScript">
+<![CDATA[
+
+''' 18:11 08.12.2017 (c) BorisScript '''
+''' vector quaternion math library   '''
+''' 20:34 16.06.2024 v2 some bug fix '''
+
+option explicit
+
+class Vec3
+ private cx, cy, cz
+ Private Sub Class_Initialize: cx = 0: cy = 0: cz = 0: setlocale("en-gb") : end sub
+ property get x: x = cx: end property
+ property get y: y = cy: end property
+ property get z: z = cz: end property
+' property let x(byval xx): cx = xx: end property
+' property let y(byval yy): cy = yy: end property
+' property let z(byval zz): cz = zz: end property
+ public default function Init(a,b,c):cx=a:cy=b:cz=c:set Init=me:end function
+
+ sub setVec (a,b,c): cx = a: cy = b: cz = c: end sub
+ sub debug (text)
+  if abs(cx) < 1e-12 then cx = 0
+  if abs(cy) < 1e-12 then cy = 0
+  if abs(cz) < 1e-12 then cz = 0
+  msgbox text+vbcrlf+vbcrlf+"x = "+cstr(cx)+vbcrlf+"y = "+cstr(cy)+vbcrlf+"z = "+cstr(cz)
+ end sub
+end class          ':::::::::::::: end of class Vec3
+
+class Qtr4
+ private cw, cx, cy, cz
+ Private Sub Class_Initialize: cw = 1: cx = 0: cy = 0: cz = 0: end sub
+ property get w: w = cw: end property
+ property get x: x = cx: end property
+ property get y: y = cy: end property
+ property get z: z = cz: end property
+ property let w(byval ww): cw = ww: end property
+ property let x(byval xx): cx = xx: end property
+ property let y(byval yy): cy = yy: end property
+ property let z(byval zz): cz = zz: end property
+ public sub SetQtr(ww,xx,yy,zz): cw = ww: cx = xx: cy = yy: cz = zz: end sub
+
+ sub debug (text)
+  msgbox text+vbcrlf+vbcrlf+"w = "+cstr(cw)+vbcrlf+"x = "+cstr(cx)+vbcrlf+"y = "+cstr(cy)+vbcrlf+"z = "+cstr(cz)
+ end sub
+end class          ':::::::::::::: end of class Qtr4
+
+class Plane ' normal and distance to origin
+ public d, n
+ Private Sub Class_Initialize
+  Set n = new Vec3
+  d = 0
+ end sub
+ public sub SetPlane (dir, dst):
+'  n.x=dir.x:n.y=dir.y:n.z=dir.z:d=dst
+  n.setvec dir.x, dir.y, dir.z
+  d = dst
+ end sub
+end class          ':::::::::::::: end of class Plane
+
+class Geo3
+
+':::::::::::::::::::::::
+':: vector operations ::
+':::::::::::::::::::::::
+
+'' public txt
+'' Private Sub Class_Initialize: txt="": end sub
+ function Pi         : Pi = 4 * Atn(1) :end function ''' Calculate the value of pi.
+'' function d2r(deg)   : d2r = deg* 4 * Atn(1)/180:end function
+'' function r2d(rad)   : r2d = rad*180/(4*atn(1)):end function
+ function d2r(deg)   : d2r = deg*Atn(1)/45:end function
+ function r2d(rad)   : r2d = rad*45/atn(1):end function
+'' function arcsin(x)  : arcsin = Atn( X / Sqr(-X * X + 1)):end function
+'' function arccos(x)  : if x<(-1+1e-12) then x =-1+1e-12:end if:if x > (1-1e-12) then x =1-1e-12:end if:arccos = Atn(-X / Sqr(-X * X + 1)) + 2 * Atn(1):end function
+'' function atan2(y,x) : if abs(x)<1e-12 then x = 1e-12:end if:atan2 = atn(y/x):end function
+ function dot(vA, vB): dot = vA.x * vB.x + vA.y * vB.y + vA.z * vB.z:end function
+ function vlength(v) : vlength = sqr((v.x * v.x) + (v.y * v.y) + (v.z * v.z)) :end function ''' vector length
+ function arcsin(x)
+  dim ret, ready
+  ready = false
+  if x = 1 then
+   ret = Pi/2
+   ready = true
+  end if
+  if x = -1 then
+   ret = -Pi/2
+   ready = true
+  end if
+  if not ready and abs(x) > 1 then
+   msgbox "sin(" & x & ") is undefined", vbCritical, "Error"
+   exit function
+  end if
+  if not ready then
+   ret = Atn( X / Sqr(-X * X + 1))
+  end if
+  arcsin = ret
+ end function
+ function arccos(x)
+  dim ret, ready
+  ready = false
+  if x = 1 then
+   ready = true
+   ret = 0
+  end if
+  if not ready and x =-1 then
+   ready = true
+   ret = Pi
+  end if
+  if not ready and abs(x)> 1 then
+   msgbox "cos(" & x & ") is undefined", vbCritical, "Error"
+   exit function
+  end if
+  if not ready then
+   ret = Atn(-X / Sqr(-X * X + 1)) + 2 * Atn(1):
+  end if
+  arccos = ret
+ end function
+ function atan2(y,x)
+  dim a, ready
+  ready = false
+  if x>0 then
+   a = atn(y/x)
+   ready = true
+  end if
+  if not ready and x<0 and y>=0 then
+   a = atn(y/x)+Pi
+   ready = true
+  end if
+  if not ready and x<0 and y<0 then
+   a = atn(y/x)-Pi
+   ready = true
+  end if
+  if not ready and x=0 and y>0 then
+   a = Pi/2
+   ready = true
+  end if
+  if not ready and x=0 and y<0 then
+   a = -Pi/2
+   ready = true
+  end if
+  if not ready and x=0 and y=0 then
+   msgbox "atan2(0,0) is undefined", vbCritical, "Error"
+  end if
+  atan2 = a
+ end function
+ 
+ ''' define Vec3 from "Geo"
+ function setvec(a,b,c)
+  dim v
+  set v = new Vec3
+  v.setvec a,b,c
+  set setvec = v
+ end function
+
+ ''' cross product of two 3D vectors: i(yAzB - zAyB) - j(xAzB - zAxB) + k(xAyB - yAxB)
+ function vcross(vA, vB)
+  set vcross = new Vec3
+  vcross.setvec (vA.y*vB.z)-(vB.y*vA.z), -(vA.x*vB.z)+(vB.x*vA.z), (vA.x*vB.y)-(vA.y*vB.x)
+ end function
+
+ ''' vector sum
+ public function vplus(vA, vB)
+  set vplus = new Vec3
+  vplus.setvec vA.x + vB.x, vA.y + vB.y, vA.z + vB.z
+ end function
+
+ ''' vector subtract
+ function vminus(vA, vB)
+  set vminus = new Vec3
+  vminus.setvec vA.x - vB.x, vA.y - vB.y, vA.z - vB.z
+ end function
+
+ ''' vector multiply
+ function vmulti(vA, vB)
+  set vmulti = new Vec3
+  vmulti.setvec vA.x * vB.x, vA.y * vB.y, vA.z * vB.z
+ end function
+
+ ''' normalize 3D vector
+ function vnorm(v)
+  dim length
+  set vnorm = new Vec3
+  length = sqr((v.x * v.x) + (v.y * v.y) + (v.z * v.z)) 
+  if length = 0 then msgbox "division by 0",vbcritical
+  vnorm.setvec v.x/length, v.y/length, v.z/length
+ end function
+
+ ''' shift point in 3D
+ function vshift(vpos, vdir, fac)
+  set vshift = new Vec3
+  vshift.setvec vdir.x*fac + vpos.x, vdir.y*fac + vpos.y, vdir.z*fac + vpos.z
+' VecR8 CDlgMultiCir::VEC_mov_pnt(const VecR8 v, const double k, const VecR8 dir)const {  return vec_sum(v,vec_sca_mpy(k,dir));  }
+ end function
+
+ function Angle2Vectors (vA, vB)
+  dim fDot, fA, fB, negative
+    negative = 1
+    fA = sqr(vA.x * vA.x + vA.y * vA.y + vA.z * vA.z)
+    fB = sqr(vB.x * vB.x + vB.y * vB.y + vB.z * vB.z)
+    fDot =   vA.x * vB.x + vA.y * vB.y + vA.z * vB.z
+	fAB = fA * fB
+	if fAB < 0 then negative = -1
+	if abs(fAB) < 1e-12 then fAB = 1e-12 * negative
+  Angle2Vectors = arccos(fDot / (fA * fB))
+ end function
+
+ function Angle2Vectors2(vA, vB)
+  dim fCrossX, fCrossY, fCrossZ, fCross, fDot, negative
+    negative = 1
+    fCrossX = vA.y * vB.z - vA.z * vB.y
+    fCrossY = vA.z * vB.x - vA.x * vB.z
+    fCrossZ = vA.x * vB.y - vA.y * vB.x
+    fCross = sqr(fCrossX * fCrossX + fCrossY * fCrossY + fCrossZ * fCrossZ)
+    fDot = vA.x * vB.x + vA.y * vB.y + vA.z * vB.z
+	if fDot < 0 then negative = -1
+	if abs(fDot) < 1e-12 then fDot = 1e-12 * negative
+  Angle2Vectors2 = atan2(fCross, fDot)
+ end function
+
+ function angle2Vec(a, b) ''' angle = atan2(vnorm(vcross(a,b)),dot(a,b)) // angle = acos(dot(v1, v2) / (vnorm(v1) * vnorm(v2)))
+  angle2Vec = atan2(vlength(vcross(a,b)),dot(a,b))
+ end function
+
+ function proj2vec( a, b )''' vector3 unit_a = a; unit_a.vnorm(); return  dot(a1 * dot(unit_a, b);
+   set a1 = vnorm(a)
+   set proj2vec = vmulti(a1, b)
+ end function
+
+ ''' vector intersection ray plane
+ function intersectLine(a, b, plane)
+  Set ba = vminus(b, a)
+  nDotA  = dot(plane.n, a)
+  nDotBA = dot(plane.n, ba)
+  c1 = (plane.d - nDotA)/nDotBA
+  set ca = vscale(ba, c1)
+  set intersectLine = vplus(a, ca) 
+ end function
+
+ function vscale(a, f)
+  set vscale = new Vec3
+  vscale.setvec a.x*f, a.y*f, a.z*f
+ end function
+ 
+ function vmirror(vinput, vnormal)
+  set vnormal = vnorm(vnormal)
+  set vmirror = vminus(vinput, vscale(vnormal, 2 * dot(vinput, vnormal)))
+ end function
+
+ function projpoint2plane(a, plane)  ' (p, nor, loc)
+''{return vec_diff(P,vec_sca_mpy(vec_sca_prod(vec_diff(P,Loc),Nor),Nor));}  
+  set v1 = vscale(plane.n, plane.d) ' plane location point
+  set projpoint2plane = vminus(a, vscale(plane.n, dot(vminus(a, v1), plane.n)))
+ end function
+
+ function isvequal(a,b)
+   isvequal = (a.x = b.x and a.y = b.y and a.z = b.z)
+ end function
+
+ function projvec2plane(plane_norm_in, v_in)
+ ' set v1_projected = vminus(v_in, vscale(plane_norm_in, dot(v_in, plane_norm_in)))
+  set projvec2plane = vminus(v_in, vscale(plane_norm_in, dot(v_in, plane_norm_in)))
+ end function
+
+
+''' sub show (v)      : msgbox txt  + "  "+cstr(v.x)+"  "+cstr(v.y)+"  "+cstr(v.z): end sub
+ sub debug(text, v): msgbox text + "  "+cstr(v.x)+"  "+cstr(v.y)+"  "+cstr(v.z): end sub
+
+'::::::::::::::::::::::::::::
+':: quaternion operations :::
+'::::::::::::::::::::::::::::
+
+ function SetQtr(rotate_vec, rotate_angle) ''''''''''''''''''''''''' SetQtr
+  dim q, rotate_vector
+  set q = new Qtr4
+  set rotate_vector = vnorm (rotate_vec)
+  q.w = cos(rotate_angle / 2)
+  q.x = rotate_vector.x * sin(rotate_angle / 2)
+  q.y = rotate_vector.y * sin(rotate_angle / 2)
+  q.z = rotate_vector.z * sin(rotate_angle / 2)
+  set SetQtr = q
+ end function
+
+ Public Function qscale(q, val) '''''''''''''''''''''''''''''''''''''''' Scale
+  q.w = q.w * val ' w
+  q.x = q.x * val ' x
+  q.y = q.y * val ' y
+  q.z = q.z * val ' z
+  set qscale = q
+ End Function
+
+ Public Function qlength(q) '''''''''''''''''''''''''''''''''''''''''''' Length
+  qlength = (q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z) ^ 0.5
+ End Function
+
+ Public Function qnorm(q) '''''''''''''''''''''''''''''''''''''''''''''' Norm
+  qlen = qlength(q): if qlen = 0 then q.w = 1
+  set qnorm = qscale(q, 1 / qlength(q))
+ End Function
+
+ Public Function qinvert(q) '''''''''''''''''''''''''''''''''''''''''''' Invert
+  q.x = -q.x
+  q.y = -q.y
+  q.z = -q.z
+  set qinvert = q
+ End Function
+
+ Public Function qtr2qtr(a, b) ''''''''''''''''''''''''''''''''''''''''' Quat2Quat
+  dim res
+  set res = new Qtr4
+  res.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z
+  res.x = a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y
+  res.y = a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x
+  res.z = a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w
+  set qtr2qtr = res
+ End Function
+
+' Public Function qtr2vec(qa, vb) ''''''deprecated'''''''''''''''''''''' Quat2Vec
+'  set res = new Qtr4
+'  res.w =-qa.x * vb.x - qa.y * vb.y - qa.z * vb.z
+'  res.x = qa.w * vb.x + qa.y * vb.z - qa.z * vb.y
+'  res.y = qa.w * vb.y - qa.x * vb.z + qa.z * vb.x
+'  res.z = qa.w * vb.z + qa.x * vb.y - qa.y * vb.x
+'  set qtr2vec = res
+' End Function
+
+ Public Function qtr2vec(qa, vb3) ''''''''''''''''''''''''''''''''''''''' Quat2Vec
+  dim qb
+  set qb = new Qtr4
+  qb.x = vb3.x
+  qb.y = vb3.y
+  qb.z = vb3.z
+  set qtr2vec = qtr2qtr(qa, qb)
+ End Function
+
+ Public Function QtrTransVec(q, v) '''''''''''''''''''''''''''''''''''' QuatTransVec
+  dim q2
+  set q2 = qtr2qtr(qtr2vec(q, v), qinvert(q))
+  set QtrTransVec = setvec(q2.x, q2.y, q2.z)
+ End Function
+
+ Public Function q_rotation(point, rotation, angle)
+  dim q1
+  set q1 = setqtr(rotation, d2r(angle))
+  set q_rotation = qtrtransvec(q1, point)
+ End Function
+ 
+ Public Function Angles2Qtr(angles) ''''''''''''''''''''''''''''''''''' Angles2Quat
+  set q_heading = new Qtr4
+  set q_alt     = new Qtr4
+  set q_bank    = new Qtr4
+  q_heading.z = sin(angles.z / 2)
+  q_heading.w = cos(angles.z / 2)
+  q_alt.y = sin(angles.y / 2)
+  q_alt.w = cos(angles.y / 2)
+  q_bank.x = sin(angles.x / 2)
+  q_bank.w = cos(angles.x / 2)
+  set q_tmp = Qtr2Qtr(q_heading, q_alt)
+  set Angles2Qtr = qtr2qtr(q_tmp, q_bank)
+ End Function
+
+ Public Function Qtr2Angles(q) ''''''''''''''''''''''''''''''''''''''' Quat2Angles
+  set q = qnorm(q) 'quaternion should be normalized!
+  x = atan2(2 * (q.x * q.w + q.y * q.z), 1 - 2 * (q.x * q.x + q.y * q.y))
+  y = arcsin(2 * (q.y * q.w - q.z * q.x))
+  z = atan2(2 * (q.z * q.w + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
+  set Qtr2Angles = setvec(x,y,z)
+ End Function
+
+ public function qtr2euler(q)' :::::::: returns roll, pitch, yaw
+' ::::::: roll (x-axis rotation)
+  sinr = +2.0 * (q.w * q.x + q.y * q.z)
+  cosr = +1.0 - 2.0 * (q.x * q.x + q.y * q.y)
+  roll = atan2(sinr, cosr)
+' ::::::: pitch (y-axis rotation)
+  sinp = +2.0 * (q.w * q.y - q.z * q.x)
+  if (abs(sinp) >= 1) then
+' pitch = copysign(M_PI / 2, sinp)' // use 90 degrees if out of range
+   ii = 1
+   if sinp < 0. then ii = -1
+   pitch = pi / 2 * ii
+  else
+   pitch = arcsin(sinp)
+  end if
+' ::::::: yaw (z-axis rotation)
+  siny = +2.0 * (q.w * q.z + q.x * q.y)
+  cosy = +1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+  if cosy = 0 then cosy = 1.e-8 '::: strange place
+  yaw = atan2(siny, cosy)
+ set qtr2euler = setvec (roll, pitch, yaw)
+ end function
+
+ function qslerp(qa, qb, t)
+ '	// quaternion to return
+  set qm = new qtr4
+ '	// Calculate angle between them.
+  cosHalfTheta = qa.w * qb.w + qa.x * qb.x + qa.y * qb.y + qa.z * qb.z
+ '	// if qa=qb or qa=-qb then theta = 0 and we can return qa
+  if abs(cosHalfTheta) >= 1.0 then
+   qm.w = qa.w:qm.x = qa.x:qm.y = qa.y:qm.z = qa.z
+   set slerp = qm
+   exit function
+  end if
+ '	// Calculate temporary values.
+  halfTheta = arccos(cosHalfTheta)
+  sinHalfTheta = sqr(1.0 - cosHalfTheta*cosHalfTheta)
+ '	// if theta = 180 degrees then result is not fully defined
+ '	// we could rotate around any axis normal to qa or qb
+  if abs(sinHalfTheta) < 0.001 then '){ // fabs is floating point absolute
+   qm.w = (qa.w * 0.5 + qb.w * 0.5)
+   qm.x = (qa.x * 0.5 + qb.x * 0.5)
+   qm.y = (qa.y * 0.5 + qb.y * 0.5)
+   qm.z = (qa.z * 0.5 + qb.z * 0.5)
+   set slerp = qm
+   exit function
+  end if
+  ratioA = sin((1 - t) * halfTheta) / sinHalfTheta
+  ratioB = sin(t * halfTheta) / sinHalfTheta 
+ '	//calculate Quaternion.
+  qm.w = (qa.w * ratioA + qb.w * ratioB)
+  qm.x = (qa.x * ratioA + qb.x * ratioB)
+  qm.y = (qa.y * ratioA + qb.y * ratioB)
+  qm.z = (qa.z * ratioA + qb.z * ratioB)
+  set qslerp = qm
+ end function
+
+end class          ':::::::::::::: end of class Geo
+
+function Vec : set Vec = new Vec3 : end function
+function Qtr : set Qtr = new Qtr4 : end function
+function Geo : set Geo = new Geo3 : end function
+
+]]>
+</script>
+</component>
