@@ -167,14 +167,16 @@ end class
 ''' 17:49 27.01.2025
 ''' vox class
 class VOXx
-  private m_vox, ws
+  private m_vox, m_fs, ws
   private sub class_initialize()
    set m_vox = CreateObject("SAPI.SpVoice")
    set ws    = CreateObject("WScript.Shell")
+   set m_fs  = CreateObject("SAPI.SpFileStream")
   end sub
   private sub class_terminate
+   set m_fs  = nothing
    set m_vox = nothing
-   set ws = nothing
+   set ws    = nothing
   end sub
   public sub MuteToggle
    ws.SendKeys(chr(&hAD)) '173
@@ -207,6 +209,21 @@ class VOXx
   public sub Speak(s)
    m_vox.Speak s
   end sub
+  public sub Play(wav_file)
+   m_fs.Open wav_file
+   m_vox.SpeakStream m_fs
+   m_fs.Close
+  end sub
+  public sub Save(text2save, wav_file)
+    const SAFT48kHz16BitStereo = 39
+    const SSFMCreateForWrite = 3
+    m_fs.Format.Type = SAFT48kHz16BitStereo
+    m_fs.Open wav_file, SSFMCreateForWrite
+    set m_vox.AudioOutputStream = m_fs
+    m_vox.Speak text2save
+    m_fs.Close
+  end sub
+  
 end class
 
 ''' INIfile class ''' 17:24 11.09.2023 '''
