@@ -123,10 +123,9 @@ public function FO : set FO = new FileOp : end function
 
 ''' file operation class '''
 class FileOp
- private fso, ado, cset
+ private fso, ado, cset, hto
  private sub Class_Initialize
   set fso = CreateObject("Scripting.FileSystemObject")
-  set ado = CreateObject("ADODB.Stream")
   cset = "unicode"
  end sub
  private sub Class_Terminate
@@ -145,6 +144,7 @@ class FileOp
  public sub SetChar(sCharset): cset = sCharset: end sub
 
  function ReadStream(file)
+  SetADOXML
   with ado
    .CharSet = cset
    .Open
@@ -155,6 +155,7 @@ class FileOp
  end function
 
  sub WriteStream(file, s)
+  SetADOXML
   with ado
    .Open
    .WriteText s
@@ -162,6 +163,24 @@ class FileOp
    .close
   end with
  end sub
+ 
+  private sub SetADOXML()
+    set ado = CreateObject("ADODB.Stream")
+    Set hto = createobject("Microsoft.XMLHTTP")
+  end sub
+ 
+  public sub Download(sFrom, sTo)
+    SetADOXML
+    hto.Open "GET", sFrom, False
+    hto.Send
+    with ado
+      .type = 1 '//binary '.type = 2 '//text
+      .open
+      .write hto.responseBody
+      .savetofile sTo, 2 '//overwrite
+    end with
+  end sub
+ 
 end class
 
 ''' 17:49 27.01.2025
