@@ -2,13 +2,10 @@
 <!-- (c)2025 BorisScript -->
 <component>
 <public>
-<method name="Vec" />
-<method name="Qtr" />
 <method name="Geo" />
 </public>
 <script language="VBScript">
 <![CDATA[
-
 ''' 18:11 08.12.2017 (c) BorisScript '''
 ''' vector quaternion math library   '''
 ''' 20:34 16.06.2024 v2 some bug fix '''
@@ -17,7 +14,7 @@ option explicit
 
 class Vec3
  private cx, cy, cz
- Private Sub Class_Initialize: cx = 0: cy = 0: cz = 0: setlocale("en-gb") : end sub
+ Private Sub Class_Initialize: cx = 0: cy = 0: cz = 0: end sub
  property get x: x = cx: end property
  property get y: y = cy: end property
  property get z: z = cz: end property
@@ -73,7 +70,7 @@ class Geo3
 ':::::::::::::::::::::::
 
 '' public txt
-'' Private Sub Class_Initialize: txt="": end sub
+ Private Sub Class_Initialize: setlocale("en-gb"): end sub
  function Pi         : Pi = 4 * Atn(1) :end function ''' Calculate the value of pi.
 '' function d2r(deg)   : d2r = deg* 4 * Atn(1)/180:end function
 '' function r2d(rad)   : r2d = rad*180/(4*atn(1)):end function
@@ -432,10 +429,11 @@ class Geo3
   set qslerp = qm
  end function
 
+ function Vec : set Vec = new Vec3 : end function
+ function Qtr : set Qtr = new Qtr4 : end function
+
 end class          ':::::::::::::: end of class Geo
 
-function Vec : set Vec = new Vec3 : end function
-function Qtr : set Qtr = new Qtr4 : end function
 function Geo : set Geo = new Geo3 : end function
 
 ]]>
