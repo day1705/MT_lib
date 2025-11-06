@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<!-- (c)2025 BorisScript -->
+<component>
+<public>
+<method name="IEBase" />
+</public>
+<script language="VBScript">
+<![CDATA[
+
+''' 23:21 17.02.2023 (c) BorisScript '''
+''' IE based browser shell           '''
+
+class IEBrowser
+ private m_ie, m_htm, m_left, m_top, m_width, m_height, m_address
+
+ private sub class_initialize
+  Set m_ie = CreateObject("InternetExplorer.Application")
+  m_htm = "<body scroll=""no""><center><b>this is a vbs html shell based on<br> IE browser<br><font face=verdana size=1>&copy; 2023 - BorisScript</body>"
+  m_left = 100
+  m_top  = 100
+  m_width  = 300
+  m_height = 100
+  m_address = "about:blank"
+ end sub
+ 
+ public sub SetDivHtml(sDivId, sHtml)
+  m_ie.document.getElementById(sDivId).innerhtml = sHtml
+  m_ie.document.getElementById(sDivId).click
+  ' m_ie.document.all.tags("input")(0).click
+ end sub
+
+ public sub Show()
+  m_ie.Visible = true
+ end sub
+ 
+ public sub Hide()
+  m_ie.Visible = false
+ end sub
+ 
+ public sub Close()
+  on error resume next
+  m_ie.quit
+  set m_ie = nothing
+ end sub
+
+ public sub Title(stitle)
+  m_ie.document.title = stitle
+ end sub
+ 
+ public sub SetWindow(left, top, width, height, htm)
+  if htm <> "" then m_htm = htm
+  m_left   = left
+  m_top    = top
+  m_width  = width
+  m_height = height
+  IBrowser
+  CreateGUI
+ end sub
+  
+ private sub IBrowser()
+  with m_ie
+   .left   = m_left   
+   .top    = m_top    
+   .width  = m_width  
+   .height = m_height 
+   .TheaterMode = false
+   .resizable = False
+   .AddressBar = False
+   .StatusBar = False
+   .ToolBar = False
+   .Navigate m_address
+  end with
+ end sub
+
+ private sub CreateGUI()
+  dim doc
+  Set doc = m_ie.Document 
+  doc.Open 
+  doc.Write m_htm
+  doc.Close
+  set doc = nothing
+ end sub
+
+end class
+
+''' 23:17 06.11.2025
+function IEBase : set IEBase = new IEBrowser : end function
+
+]]>
+</script>
+</component>
