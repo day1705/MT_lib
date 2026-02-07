@@ -118,9 +118,6 @@ class MTC
 
 end class
 
-
-public function FO : set FO = new FileOp : end function
-
 ''' file operation class '''
 class FileOp
  private fso, ado, cset, hto
@@ -180,7 +177,34 @@ class FileOp
       .savetofile sTo, 2 '//overwrite
     end with
   end sub
- 
+
+''' 22:29 12.01.2026 ''' getfilelist 
+  public function GetFileList(SearchFolder)
+    dim colFiles, objFile
+    if not fso.folderexists(SearchFolder) then
+     msgbox "wrong folder name", vbcritical, "Getfiles"
+     exit function
+    end if
+    Set colFiles = fso.GetFolder(SearchFolder).Files
+    For Each objFile in colFiles
+     flist = flist + objFile.path + vbcrlf
+    Next
+    ShowSubfolders fso.GetFolder(SearchFolder)
+    GetFileList = flist
+  end function
+
+  private sub ShowSubFolders(Folder)
+    dim Subfolder, oFold, colFiles, objFile
+    For Each Subfolder in Folder.SubFolders
+      Set oFold = fso.GetFolder(Subfolder.Path)
+      Set colFiles = oFold.Files
+      For Each objFile in colFiles
+        flist = flist + objFile.path + vbcrlf
+      Next
+      ShowSubFolders Subfolder
+    Next
+  end sub
+
 end class
 
 ''' 17:49 27.01.2025
@@ -369,3 +393,4 @@ function MT : set MT = new MTC : end function
 ]]>
 </script>
 </component>
+
