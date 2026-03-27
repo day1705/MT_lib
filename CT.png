@@ -55,6 +55,7 @@ class MTC
   if arr(i)="readfile"  then i=i+1:readtext   arr(i):sleep 1:exit sub:end if
   if left(arr(i),4)="time"   then sleep cdbl(mid(arr(i),5)):exit sub:end if
   if left(arr(i),4)="say:"   then say mid(arr(i),5):exit sub:end if
+  if left(arr(i),7)="volume:" then vox.volume mid(arr(i),8):exit sub:end if
   if left(arr(i),6)="msgbox" then
     sign = mid(arr(i),7,1)
     if sign="?" then icon = vbQuestion
